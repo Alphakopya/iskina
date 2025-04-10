@@ -1,0 +1,113 @@
+.form {
+    padding: 20px;
+    width: 100%;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+    a {
+        display: flex;
+        align-items: center;
+        color: var(--black);
+        text-decoration: none;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        font-weight: bold;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    a svg {
+        fill: var(--black);
+        transition: fill 0.2s ease-in-out;
+    }
+    
+    a:hover {
+        color: var(--primary);
+    }
+    
+    a:hover svg {
+        fill: var(--primary);
+    }
+    h2 {
+        text-align: center;
+        font-size: 2em;
+        margin-bottom: 50px;
+    }
+    h3 {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        color: #333;
+        padding: 10px 0;
+        border-bottom: 2px solid var(--line);
+    }
+
+    .grid-group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(200px, 1fr)); // Ensures max 3 columns
+        gap: 15px;
+        margin-bottom: 20px;
+    
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .form-control {
+        padding: 10px;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+        font-size: 1em;
+        transition: all 0.3s;
+
+        &:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        &.has-text {
+            border-color: var(--secondary);
+        }
+    }
+
+    textarea {
+        padding: 10px;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+        font-size: 1.2em !important;
+        transition: all 0.3s;
+        resize: none;
+        margin-bottom: 20px;
+        &:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        &.has-text {
+            border-color: var(--secondary);
+        }
+    }
+    .form-content {
+        display: flex;
+        flex-direction: column;
+        button {
+            align-self: flex-end;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+    
+            &:hover {
+                background: var(--secondary);
+            }
+        }
+    }
+}
+

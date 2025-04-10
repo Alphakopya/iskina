@@ -1,0 +1,65 @@
+#content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+
+    .content {
+        display: flex;
+        flex-direction: column;
+        h2 {
+            margin-bottom: 20px;
+        }
+    
+        .back {
+            text-decoration: none;
+            align-self: flex-end;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+        
+        .back:hover {
+            background-color: var(--secondary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            thead {
+                background-color: red;
+                color: white;
+            }
+    
+            th, td {
+                text-align: center;
+                padding: 15px;
+
+                .btn-success {
+                    background-color: red;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s ease-in-out;
+                }   
+                .btn-danger {
+                    background-color: rgb(68, 68, 68);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: background-color 0.3s ease-in-out;
+                }
+            }
+        }
+    }
+}

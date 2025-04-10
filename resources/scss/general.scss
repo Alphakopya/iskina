@@ -1,0 +1,18 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+:root {
+    --primary: rgb(200, 0, 0);
+    --secondary: rgba(200, 0, 0, 0.7);
+    --black: #333;
+    --white: #fff;
+    --line: #ccc;
+    --detail: #666;
+}

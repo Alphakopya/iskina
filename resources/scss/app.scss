@@ -1,0 +1,105 @@
+@use 'general';
+
+/* Sidebar Styles */
+main {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    min-width: 250px;
+    width: 100%;
+    max-width: 20%;
+    padding: 20px;
+    position: relative;
+    background-color: rgb(100, 0, 0);
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid var(--line);
+}
+
+.sidebar a {
+    display: flex;
+    align-items: center;
+    color: var(--white);
+    text-decoration: none;
+    cursor: pointer;
+    padding: 15px 20px;
+    transition: background-color 0.3s;
+    border-radius: 10px;
+}
+
+.sidebar a img {
+    margin-right: 10px;
+}
+.sidebar a:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+/* Dropdown Menu */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    justify-content: space-between;
+    padding: 15px 20px;
+    cursor: pointer;
+}
+
+.dropdown-toggle span {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-menu {
+    display: none;
+    flex-direction: column;
+}
+
+.dropdown-menu a {
+    padding: 10px 50px;
+    display: block;
+    color: white;
+}
+
+.dropdown-menu a:hover {
+    background-color: transparent;
+    color: rgb(250, 0, 0);
+}
+
+.pagination-controls {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.pagination-link {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    background-color: #f1f1f1;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+    border-color: 1px solid var(--line);
+    transition:
+        background-color 0.3s,
+        color 0.3s;
+
+    &:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    &.active {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
