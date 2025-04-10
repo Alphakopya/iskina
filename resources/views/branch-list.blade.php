@@ -7,7 +7,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>Branch ID</th>
                     <th>Name</th>
                     <th>Location</th>
                     <th>Contact Number</th>
@@ -43,14 +42,13 @@
                         branches.forEach(branch => {
                             branchTable.append(`
                                 <tr>
-                                    <td>${branch.branch_id}</td>
                                     <td>${branch.branch_name}</td>
                                     <td>${branch.location}</td>
                                     <td>${branch.contact_number}</td>
                                     <td>${branch.branch_manager}</td>
                                     <td>
                                         <a href="/branch-update/${branch.id}"><img src="{{ asset('images/edit.svg' )}}" alt="Edit" /></a>
-                                        <a onclick="deleteBranch(${branch.id})">Delete</a>
+                                        <a onclick="deleteBranch(${branch.id})"><img src="{{ asset('images/delete.svg' )}}" alt="Delete" /></a>
                                     </td>
                                 </tr>
                             `);

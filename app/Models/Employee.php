@@ -36,4 +36,9 @@ class Employee extends Model
     {
         return $this->hasOne(User::class, 'email', 'email');
     }
+
+    public function fingerprints()
+    {
+        return $this->hasOne(Fingerprint::class, 'employee_id', 'employee_id');
+    }
 }

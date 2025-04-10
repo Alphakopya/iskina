@@ -3,7 +3,6 @@
 @section('content')
     <div class="content">
         <h2>Leave Request List</h2>
-        <a href="/leaves/new" class="back btn-primary">New Leave Request</a>
         <table>
             <thead>
                 <tr>
@@ -46,7 +45,7 @@
                             let actionButtons = '';
                             if (request.status === 'Pending') {
                                 actionButtons = `
-                                    <button class="btn btn-success accept-leave" data-id="${request.id}">Accept</button>
+                                    <button class="btn btn-success accept-leave" data-id="${request.id}">Approve</button>
                                     <button class="btn btn-danger reject-leave" data-id="${request.id}">Reject</button>
                                 `;
                             };

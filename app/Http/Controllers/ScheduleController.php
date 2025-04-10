@@ -35,9 +35,10 @@ class ScheduleController extends Controller
         try {
             Log::info('Schedule store request received: ' . json_encode($request->all()));
 
+            // Validate the request
             $validated = $request->validate([
                 'employees' => 'required|array|min:1',
-                'employees.*' => 'exists:employees,employee_id', // Correct for employee_id
+                'employees.*' => 'exists:employees,employee_id',
                 'start_date' => 'required|date|after_or_equal:today',
                 'end_date' => 'required|date|after_or_equal:start_date',
                 'work_days' => 'required|array|min:1',
@@ -47,6 +48,7 @@ class ScheduleController extends Controller
                 'holidays.*' => 'date|distinct',
             ]);
 
+            // Create date range for the new schedule
             $startDate = new \DateTime($validated['start_date']);
             $endDate = new \DateTime($validated['end_date']);
             $dateRange = [];
@@ -56,15 +58,76 @@ class ScheduleController extends Controller
                 $currentDate->modify('+1 day');
             }
 
+            // Filter work_days, day_off, and holidays to ensure they fall within the date range
             $workDays = array_filter($validated['work_days'], fn($date) => in_array($date, $dateRange));
             $dayOff = in_array($validated['day_off'], $dateRange) ? $validated['day_off'] : null;
-            $holidays = array_filter($validated['holidays'], fn($date) => in_array($date, $dateRange));
+            $holidays = array_filter($validated['holidays'] ?? [], fn($date) => in_array($date, $dateRange));
 
+            // Check for duplicate dates across work_days, day_off, and holidays
             $allAssignedDates = array_merge($workDays, [$dayOff], $holidays);
             if (count($allAssignedDates) !== count(array_unique($allAssignedDates))) {
                 return response()->json(['error' => 'Dates must be unique across work_days, day_off, and holidays'], 422);
             }
 
+            // Fetch employee names for the provided employee IDs
+            $employeeNames = Employee::whereIn('employee_id', $validated['employees'])
+                ->pluck('first_name', 'employee_id')
+                ->map(function ($firstName, $employeeId) {
+                    $lastName = Employee::where('employee_id', $employeeId)->value('last_name');
+                    return "$firstName $lastName";
+                })
+                ->toArray();
+
+            // Check for schedule conflicts for each employee
+            $conflictingEmployees = [];
+            foreach ($validated['employees'] as $employeeId) {
+                Log::info('Checking for schedule conflicts', [
+                    'employee_id' => $employeeId,
+                    'new_start_date' => $validated['start_date'],
+                    'new_end_date' => $validated['end_date'],
+                ]);
+
+                // Find existing schedules for the employee
+                $existingSchedules = Schedule::where('employee_id', $employeeId)
+                    ->where(function ($query) use ($validated) {
+                        $query->where('start_date', '<=', $validated['end_date'])
+                            ->where('end_date', '>=', $validated['start_date']);
+                    })
+                    ->get();
+
+                if ($existingSchedules->isNotEmpty()) {
+                    $conflictingEmployees[$employeeId] = $existingSchedules->map(function ($schedule) {
+                        return [
+                            'schedule_id' => $schedule->id,
+                            'start_date' => $schedule->start_date,
+                            'end_date' => $schedule->end_date,
+                        ];
+                    })->toArray();
+
+                    Log::warning('Schedule conflict found for employee', [
+                        'employee_id' => $employeeId,
+                        'conflicting_schedules' => $conflictingEmployees[$employeeId],
+                    ]);
+                }
+            }
+
+            // If there are conflicts, return an error with employee names and line breaks
+            if (!empty($conflictingEmployees)) {
+                $errorMessage = "The following employees have conflicting schedules:\n";
+                foreach ($conflictingEmployees as $employeeId => $schedules) {
+                    $employeeName = $employeeNames[$employeeId] ?? 'Unknown Employee';
+                    $errorMessage .= "$employeeName has conflicts with schedules: ";
+                    foreach ($schedules as $schedule) {
+                        $errorMessage .= "Schedule ID {$schedule['schedule_id']} (from {$schedule['start_date']} to {$schedule['end_date']}), ";
+                    }
+                    $errorMessage = rtrim($errorMessage, ', ') . "\n";
+                }
+                $errorMessage = rtrim($errorMessage, "\n");
+
+                return response()->json(['error' => $errorMessage], 422);
+            }
+
+            // Create the schedules
             $schedules = [];
             foreach ($validated['employees'] as $employeeId) {
                 $schedules[] = Schedule::create([
@@ -110,43 +173,118 @@ class ScheduleController extends Controller
      * @param Schedule $schedule
      * @return JsonResponse
      */
-    public function update(Request $request, Schedule $schedule): JsonResponse
-    {
-        try {
-            $validated = $request->validate([
-                'employees' => 'required|array|min:1',
-                'employees.*' => 'exists:employees,employee_id',
-                'start_date' => 'required|date|after_or_equal:today',
-                'end_date' => 'required|date|after_or_equal:start_date',
-                'work_days' => 'required|array|min:1',
-                'work_days.*' => 'date|distinct',
-                'day_off' => 'required|date',
-                'holidays' => 'nullable|array',
-                'holidays.*' => 'date|distinct',
-            ]);
 
-            // For single employee, use: 'employee_id' => 'required|exists:employees,employee_id'
-            // Then: $validated['employee_id'] instead of $validated['employees'][0]
+public function update(Request $request, Schedule $schedule): JsonResponse
+{
+    try {
+        Log::info('Schedule update request received: ' . json_encode($request->all()));
 
-            $schedule->update([
-                'employee_id' => $validated['employees'][0], // Assuming single employee for simplicity
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'work_days' => $validated['work_days'],
-                'day_off' => $validated['day_off'],
-                'holidays' => $validated['holidays'],
-            ]);
+        // Validate the request
+        $validated = $request->validate([
+            'employees' => 'required|array|min:1',
+            'employees.*' => 'exists:employees,employee_id',
+            'start_date' => 'required|date|after_or_equal:today',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'work_days' => 'required|array|min:1',
+            'work_days.*' => 'date|distinct',
+            'day_off' => 'required|date',
+            'holidays' => 'nullable|array',
+            'holidays.*' => 'date|distinct',
+        ]);
 
-            Log::info('Schedule updated successfully for employee: ' . $validated['employees'][0]);
-            return response()->json([
-                'data' => $schedule,
-                'message' => 'Schedule updated successfully'
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Schedule update failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error'], 500);
+        // For simplicity, assuming single employee as per the original code
+        $employeeId = $validated['employees'][0];
+
+        // Create date range for the updated schedule
+        $startDate = new \DateTime($validated['start_date']);
+        $endDate = new \DateTime($validated['end_date']);
+        $dateRange = [];
+        $currentDate = clone $startDate;
+        while ($currentDate <= $endDate) {
+            $dateRange[] = $currentDate->format('Y-m-d');
+            $currentDate->modify('+1 day');
         }
+
+        // Filter work_days, day_off, and holidays to ensure they fall within the date range
+        $workDays = array_filter($validated['work_days'], fn($date) => in_array($date, $dateRange));
+        $dayOff = in_array($validated['day_off'], $dateRange) ? $validated['day_off'] : null;
+        $holidays = array_filter($validated['holidays'] ?? [], fn($date) => in_array($date, $dateRange));
+
+        // Check for duplicate dates across work_days, day_off, and holidays
+        $allAssignedDates = array_merge($workDays, [$dayOff], $holidays);
+        if (count($allAssignedDates) !== count(array_unique($allAssignedDates))) {
+            return response()->json(['error' => 'Dates must be unique across work_days, day_off, and holidays'], 422);
+        }
+
+        // Fetch employee name for the provided employee ID
+        $employee = Employee::where('employee_id', $employeeId)->first();
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
+        }
+        $employeeName = "{$employee->first_name} {$employee->last_name}";
+
+        // Check for schedule conflicts for the employee, excluding the current schedule
+        Log::info('Checking for schedule conflicts', [
+            'employee_id' => $employeeId,
+            'new_start_date' => $validated['start_date'],
+            'new_end_date' => $validated['end_date'],
+            'schedule_id' => $schedule->id,
+        ]);
+
+        $existingSchedules = Schedule::where('employee_id', $employeeId)
+            ->where('id', '!=', $schedule->id) // Exclude the current schedule
+            ->where(function ($query) use ($validated) {
+                $query->where('start_date', '<=', $validated['end_date'])
+                      ->where('end_date', '>=', $validated['start_date']);
+            })
+            ->get();
+
+        if ($existingSchedules->isNotEmpty()) {
+            $conflictingSchedules = $existingSchedules->map(function ($sched) {
+                return [
+                    'schedule_id' => $sched->id,
+                    'start_date' => $sched->start_date,
+                    'end_date' => $sched->end_date,
+                ];
+            })->toArray();
+
+            Log::warning('Schedule conflict found for employee', [
+                'employee_id' => $employeeId,
+                'conflicting_schedules' => $conflictingSchedules,
+            ]);
+
+            // Build error message with employee name and line breaks
+            $errorMessage = "The following employee has conflicting schedules:\n";
+            $errorMessage .= "$employeeName has conflicts with schedules: ";
+            foreach ($conflictingSchedules as $conflictingSchedule) {
+                $errorMessage .= "Schedule ID {$conflictingSchedule['schedule_id']} (from {$conflictingSchedule['start_date']} to {$conflictingSchedule['end_date']}), ";
+            }
+            $errorMessage = rtrim($errorMessage, ', ') . "\n";
+            $errorMessage = rtrim($errorMessage, "\n");
+
+            return response()->json(['error' => $errorMessage], 422);
+        }
+
+        // Update the schedule
+        $schedule->update([
+            'employee_id' => $employeeId,
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'work_days' => $workDays,
+            'day_off' => $dayOff,
+            'holidays' => $holidays,
+        ]);
+
+        Log::info('Schedule updated successfully for employee: ' . $employeeId);
+        return response()->json([
+            'data' => $schedule->fresh(), // Reload the schedule to get updated data
+            'message' => 'Schedule updated successfully'
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Schedule update failed: ' . $e->getMessage() . ' | Stack: ' . $e->getTraceAsString());
+        return response()->json(['error' => 'Internal Server Error'], 500);
     }
+}
     /**
      * Remove the specified resource from storage.
      *

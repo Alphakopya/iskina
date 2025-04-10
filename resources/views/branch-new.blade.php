@@ -7,11 +7,6 @@
         <form class="form-content" id="branch-form">
             <div class="grid-group">
                 <div class="form-group">
-                    <label for="branch_id">Branch ID</label>
-                    <input type="text" name="branch_id" id="branch_id" class="form-control" required>
-                    <small class="text-danger error" id="error-branch_id"></small>
-                </div>
-                <div class="form-group">
                     <label for="branch_name">Branch Name</label>
                     <input type="text" name="branch_name" id="branch_name" class="form-control" required>
                     <small class="text-danger error" id="error-branch_name"></small>
@@ -79,6 +74,7 @@
                 axios.post('/api/branches', formData)
                     .then(response => {
                         alert('Branch added successfully!');
+                        checkInput()
                         $('#branch-form')[0].reset(); // Reset form fields
                     })
                     .catch(error => {

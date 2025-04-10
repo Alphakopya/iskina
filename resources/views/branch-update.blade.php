@@ -4,13 +4,8 @@
     <div class="form">
         <a href="/branch"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><path d="M400-80 0-480l400-400 71 71-329 329 329 329-71 71Z"/></svg>Back to Branch List</a>
         <h2>Update Branch</h2>
-        <form id="branch-form">
+        <form class="form-content" id="branch-form">
             <div class="grid-group">
-                <div class="form-group">
-                    <label for="branch_id">Branch ID</label>
-                    <input type="text" name="branch_id" id="branch_id" class="form-control" required>
-                    <small class="text-danger error" id="error-branch_id"></small>
-                </div>
                 <div class="form-group">
                     <label for="branch_name">Branch Name</label>
                     <input type="text" name="branch_name" id="branch_name" class="form-control" required>
@@ -33,7 +28,7 @@
                 </div>
             </div>
 
-            <button type="submit" id="submit-btn" class="btn btn-primary">Submit</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary">Update Branch</button>
         </form>
     </div>
 

@@ -98,7 +98,6 @@
                     <select name="role" id="role" class="form-control" required>
                         <option value="" selected disabled>Select</option>
                         <option value="admin">Admin</option>
-                        <option value="manager">Manager</option>
                         <option value="employee">Employee</option>
                         <option value="hr">HR</option>
                     </select>
@@ -186,7 +185,7 @@
             // Handle form submission with Axios
             $('#update-employee-btn').click(function () {
                 $('.error').text('');
-
+                checkInput();
                 let formData = {
                     employee_id: $('#employee_id').val(),
                     first_name: $('#first_name').val(),

@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Fingerprint;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Log;
 class EmployeeController extends Controller
 {
     /**
@@ -19,8 +20,11 @@ class EmployeeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+
+public function store(Request $request)
+{
+    try {
+        // Validate the request
         $fields = $request->validate([
             'employee_id' => 'required|unique:employees,employee_id',
             'branch' => 'required',
@@ -38,22 +42,37 @@ class EmployeeController extends Controller
             'role' => 'required',
         ]);
 
-        $employee = Employee::create($fields);
+        Log::info('Creating new employee', ['fields' => $fields]);
 
+        // Create the Employee
+        $employee = Employee::create($fields);
+        Log::info('Employee created successfully', ['employee_id' => $employee->employee_id]);
+
+        // Create the User
         $user = User::create([
             'name' => $fields['first_name'] . ' ' . $fields['last_name'],
             'email' => $fields['email'],
             'password' => Hash::make('ISKINA-' . strtoupper($fields['last_name'])),
             'role' => $fields['role'],
         ]);
+        Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email]);
 
+        // Find available fingerprint IDs
         $usedIds = Fingerprint::whereNotNull('fingerprint_id')->pluck('fingerprint_id')->toArray();
+        Log::info('Used fingerprint IDs', ['used_ids' => $usedIds]);
+
         $availableIds = array_diff(range(1, 127), $usedIds);
+        Log::info('Available fingerprint IDs', ['available_ids' => $availableIds]);
+
         if (empty($availableIds)) {
+            Log::warning('No available fingerprint IDs');
             return response()->json(['message' => 'No available fingerprint IDs'], 400);
         }
-        $fingerprintId = $availableIds[array_rand($availableIds)];
 
+        $fingerprintId = $availableIds[array_rand($availableIds)];
+        Log::info('Selected fingerprint ID', ['fingerprint_id' => $fingerprintId]);
+
+        // Create the Fingerprint record
         $fingerprint = Fingerprint::create([
             'employee_id' => $employee->employee_id,
             'name' => $employee->first_name . ' ' . $employee->last_name,
@@ -61,9 +80,8 @@ class EmployeeController extends Controller
             'fingerprint_id' => $fingerprintId,
             'fingerprint_select' => 0, // Not selected yet
             'add_fingerid' => 0, // Not added yet
-            'del_fingerid' => 0, // Not deleted
-            'mode' => 'enroll',
         ]);
+        Log::info('Fingerprint created successfully', ['fingerprint_id' => $fingerprint->fingerprint_id]);
 
         return response()->json([
             'status' => 'success',
@@ -74,8 +92,17 @@ class EmployeeController extends Controller
                 'fingerprint' => $fingerprint,
             ]
         ], 201);
+    } catch (\Exception $e) {
+        Log::error('Error creating employee/fingerprint', [
+            'error' => $e->getMessage(),
+            'stack' => $e->getTraceAsString(),
+        ]);
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to create employee/fingerprint: ' . $e->getMessage(),
+        ], 500);
     }
-
+}
     /**
      * Display the specified resource.
      */
@@ -212,6 +239,22 @@ class EmployeeController extends Controller
                          ->orWhere('employee_id', 'like', "%{$search}%");
         })->paginate(10);
 
+        return response()->json(['data' => $employees]);
+    }
+
+
+    public function indexx(Request $request)
+    {
+        $search = $request->query('search');
+        $employees = Employee::when($search, function ($query, $search) {
+                return $query->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('employee_id', 'like', "%{$search}%");
+            })
+            ->with(['fingerprints' => function ($query) {
+                $query->where('add_fingerid', 0);
+            }]);
+        
         return response()->json(['data' => $employees]);
     }
 

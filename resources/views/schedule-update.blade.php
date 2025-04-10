@@ -37,6 +37,7 @@
         <!-- Step 2: Schedule Days -->
         <div id="step2" class="step" style="display: none;">
             <h3>Step 2: Update Schedule Days</h3>
+            <div id="server-error" class="text-danger" style="margin-bottom: 15px; display: none;"></div> <!-- Added error container -->
             <form class="form-content" id="schedule-form">
                 <div class="grid-group">
                     <div class="form-group">
@@ -148,6 +149,16 @@
             .calendar-box .date { font-size: 12px; }
             .calendar-box .month { font-size: 9px; }
             .calendar-box .status { font-size: 8px; }
+        }
+        .text-danger { color: #dc3545; font-weight: bold; }
+        #server-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+            line-height: 1.5; /* Increase line spacing for better readability */
         }
     </style>
 
@@ -396,11 +407,13 @@
             $('#back-to-step1').click(function () {
                 $('#step2').hide();
                 $('#step1').show();
+                $('#server-error').hide().text(''); // Clear server error when going back
             });
 
             $('#schedule-form').on('submit', function (event) {
                 event.preventDefault();
                 $('.error').text('');
+                $('#server-error').hide().text(''); // Clear previous server error
 
                 const startDate = $('#start_date').val();
                 const endDate = $('#end_date').val();
@@ -438,16 +451,25 @@
                 axios.put(`/api/schedules/{{ $schedule->id }}`, formData)
                     .then(response => {
                         alert('Schedule updated successfully!');
-                        window.location.href = '/schedules';
+                        window.location.href = '/schedules/list';
                     })
                     .catch(error => {
-                        if (error.response && error.response.data.errors) {
-                            let errors = error.response.data.errors;
-                            for (let field in errors) {
-                                $(`#error-${field}`).text(errors[field][0]);
+                        if (error.response && error.response.data) {
+                            // Handle validation errors (e.g., from Laravel's validator)
+                            if (error.response.data.errors) {
+                                let errors = error.response.data.errors;
+                                for (let field in errors) {
+                                    $(`#error-${field}`).text(errors[field][0]);
+                                }
+                            }
+                            // Handle custom errors (e.g., schedule conflicts)
+                            if (error.response.data.error) {
+                                // Replace \n with <br> for HTML rendering
+                                const errorMessage = error.response.data.error.replace(/\n/g, '<br>');
+                                $('#server-error').html(errorMessage).show();
                             }
                         } else {
-                            alert('An error occurred while updating the schedule.');
+                            $('#server-error').text('An error occurred while updating the schedule.').show();
                         }
                     });
             });

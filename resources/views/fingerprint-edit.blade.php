@@ -98,10 +98,11 @@
                 .then(response => {
                     let fingerprint = response.data.data.data[0];
                     selectedEmployee = fingerprint.employee_id;
-                    axios.get(`/api/employees/${selectedEmployee}`)
+                    axios.get(`/fingerprint/employees/${selectedEmployee}`)
                         .then(response => {
-                            $('#selected-employee-name').text(response.data.data.first_name + ' ' + response.data.data.last_name);
-                            $('#selected-employee-name-step2').text(response.data.data.first_name + ' ' + response.data.data.last_name);
+                            
+                            $('#selected-employee-name').text(response.data.fingerprint.name);
+                            $('#selected-employee-name-step2').text(response.data.fingerprint.name);
                             $('#fingerprint-id-step2').text(fingerprintId);
                         });
                 });
@@ -169,7 +170,7 @@
                 setTimeout(() => {
                     console.log('Triggering hideModal');
                     hideModal();
-                }, 1000);
+                }, 2000);
             }
 
             function hideModal() {

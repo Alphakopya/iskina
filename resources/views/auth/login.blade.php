@@ -72,7 +72,7 @@
                 })
                 .catch(error => {
                     console.error(error.response?.data || error.message);
-                    $("#error-message").text("Login failed. Please check your credentials.").show();
+                    $("#error-message").text("Invalid Credentials").show();
                 });
             });
         });

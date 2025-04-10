@@ -47,7 +47,7 @@
                         let fingerprintTable = $("#fingerprint-body");
                         fingerprintTable.empty();
 
-                        if (fingerprints.length === 0) {
+                        if (fingerprints.length === 0 ) {
                             fingerprintTable.append("<tr><td colspan='5'>No fingerprints found in attendance mode.</td></tr>");
                         } else {
                             fingerprints.forEach(fingerprint => {

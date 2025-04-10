@@ -6,6 +6,7 @@ use App\Models\Fingerprint;
 use App\Models\Attendance;
 use App\Models\Device;
 use Illuminate\Http\Request;
+use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -24,9 +25,28 @@ class FingerprintController extends Controller
         // Already in enroll mode from creation, just confirm
         return response()->json(['message' => 'Fingerprint registration initiated', 'fingerprint_id' => $fingerprint->fingerprint_id]);
     }
+
+    public function getEmployee($employeeId)
+    {
+        $employee = Employee::where('employee_id', $employeeId);
+        $fingerprint = Fingerprint::where('employee_id', $employeeId)->first();
+
+        if (!$employee) {
+            return response()->json(['message' => 'Employee not found'], 404);
+        }
+
+        return response()->json([
+            'data' => $employee,
+            'fingerprint' => $fingerprint,
+        ]);
+    }
     
     public function handleFingerprint(Request $request)
     {
+        // Set the timezone to Asia/Manila for this method
+        Carbon::setLocale('en');
+        date_default_timezone_set('Asia/Manila');
+
         $fingerprint = Fingerprint::first();
         $device = Device::first();
         if (!$fingerprint || !$device) {
@@ -81,7 +101,7 @@ class FingerprintController extends Controller
                 ->whereDate('date', $today)
                 ->whereNull('time_out')
                 ->first();
-                Log::info("Attendance Check: fingerID={$fingerID}, employee_id={$fingerprint->employee_id}, date={$today}");
+            Log::info("Attendance Check: fingerID={$fingerID}, employee_id={$fingerprint->employee_id}, date={$today}");
             if ($record) {
                 $record->update([
                     'time_out' => Carbon::now(),
@@ -109,9 +129,9 @@ class FingerprintController extends Controller
             $record = Attendance::where('employee_id', $fingerprint->employee_id)
                 ->whereDate('date', $today)
                 ->first();
-                Log::info("Attendance Check: fingerID={$fingerID}, employee_id={$fingerprint->employee_id}, date={$today}");
+            Log::info("Attendance Check: fingerID={$fingerID}, employee_id={$fingerprint->employee_id}, date={$today}");
             if ($record) {
-                if(!$record->break_in) {
+                if (!$record->break_in) {
                     $record->update([
                         'break_in' => Carbon::now(),
                     ]);
@@ -129,7 +149,7 @@ class FingerprintController extends Controller
         }
         
         if ($request->input('Get_Fingerid') === 'get_id') {
-            $fingerprint = Device::where('device_mode', 'enroll')->where('fingerprint_select', 1)->first();
+            $fingerprint = Fingerprint::where('fingerprint_select', 1)->first();
             if ($fingerprint) {
                 return response("add-id{$fingerprint->fingerprint_id}", 200);
             }
@@ -141,6 +161,10 @@ class FingerprintController extends Controller
 
     public function getEnrollmentStatus(Request $request)
     {
+        // Set the timezone to Asia/Manila for this method
+        Carbon::setLocale('en');
+        date_default_timezone_set('Asia/Manila');
+
         $fingerID = $request->query('fingerprint_id');
         $status = \Cache::get("enroll_status_{$fingerID}");
         \Log::info("Cache Retrieval: fingerID={$fingerID}, status=" . json_encode($status));
@@ -156,14 +180,38 @@ class FingerprintController extends Controller
         $branch = $request->query('branch');
         $employeeId = $request->query('employee_id');
 
-        $fingerprints = Fingerprint::when($search, function ($query, $search) {
-            return $query->where('name', 'like', "%{$search}%")
-                         ->orWhere('employee_id', 'like', "%{$search}%");
-        })->when($branch, function ($query, $branch) {
-            return $query->where('branch', $branch);
-        })->when($employeeId, function ($query, $employeeId) {
-            return $query->where('employee_id', $employeeId);
-        })->with('employee')->paginate(10);
+        $fingerprints = Fingerprint::where('add_fingerid', 1)
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%")
+                            ->orWhere('employee_id', 'like', "%{$search}%");
+            })->when($branch, function ($query, $branch) {
+                return $query->where('branch', $branch);
+            })->when($employeeId, function ($query, $employeeId) {
+                return $query->where('employee_id', $employeeId);
+            })->with('employee')->paginate(10);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $fingerprints]);
+        }
+
+        return view('fingerprint-list', compact('fingerprints'));
+    }
+
+    public function fingerprintIndex(Request $request)
+    {
+        $search = $request->query('search');
+        $branch = $request->query('branch');
+        $employeeId = $request->query('employee_id');
+
+        $fingerprints = Fingerprint::where('add_fingerid', 0)
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%")
+                            ->orWhere('employee_id', 'like', "%{$search}%");
+            })->when($branch, function ($query, $branch) {
+                return $query->where('branch', $branch);
+            })->when($employeeId, function ($query, $employeeId) {
+                return $query->where('employee_id', $employeeId);
+            })->with('employee')->paginate(10);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $fingerprints]);

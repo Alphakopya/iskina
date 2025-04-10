@@ -148,20 +148,21 @@
             function fetchEmployees(page = 1) {
                 let searchQuery = $('#employee_search').val().trim();
                 let branch = $('#branch_filter').val();
-                let url = '/api/fingerprints';
+                let url = '/fingerprint';
                 let params = { search: searchQuery, page: page, branch: branch };
 
                 axios.get(url, { params })
                     .then(response => {
                         console.log('Raw API Response:', response);
                         let fingerprints = response.data.data.data;
+                        console.log(fingerprints);
                         if (!Array.isArray(fingerprints)) {
                             console.warn('Fingerprints is not an array:', fingerprints);
                             fingerprints = [];
                         }
                         console.log('Extracted Fingerprints:', fingerprints);
 
-                        let employees = fingerprints.filter(f => f.mode === 'enroll');
+                        let employees = fingerprints.filter(f => f.add_fingerid === 0);
                         $('#employee-radios').empty();
                         if (employees.length > 0) {
                             employees.forEach(emp => {
@@ -222,30 +223,37 @@
                 }
                 axios.post('/fingerprint/select', { employee_id: selectedEmployee })
                     .then(() => {
-                        axios.get(`/api/employees/${selectedEmployee}`)
+                        axios.get(`/fingerprint/employees/${selectedEmployee}`)
                             .then(response => {
-                                $('#selected-employee-name').text(response.data.first_name + ' ' + response.data.last_name);
-                                axios.get(`/api/fingerprints?employee_id=${selectedEmployee}`)
-                                    .then(response => {
-                                        let fingerprint = response.data.data.data[0];
-                                        $('#fingerprint-id').text(fingerprint.fingerprint_id);
-                                        $('#step1').hide();
-                                        $('#step2').show();
-                                        axios.post('/fingerprint/register', { employee_id: selectedEmployee })
-                                            .then(() => {
-                                                console.log('Registration initiated');
-                                                seenStatuses.clear(); // Reset seen statuses for new enrollment
-                                                pollEnrollmentStatus(fingerprint.fingerprint_id);
-                                            })
-                                            .catch(error => {
-                                                console.error('Registration error:', error);
-                                                alert('Error initiating fingerprint registration: ' + (error.response?.data?.message || 'Unknown error'));
-                                            });
-                                    });
+                                const employeeData = response.data.data;
+                                const fingerprint = response.data.fingerprint;
+                                $('#selected-employee-name').text(employeeData.first_name + ' ' + employeeData.last_name);
+                                
+                                
+                                if (fingerprint) {
+                                    $('#fingerprint-id').text(fingerprint.fingerprint_id);
+                                    $('#step1').hide();
+                                    $('#step2').show();
+                                    axios.post('/fingerprint/register', { employee_id: selectedEmployee })
+                                        .then(() => {
+                                            console.log('Registration initiated');
+                                            seenStatuses.clear(); // Reset seen statuses for new enrollment
+                                            pollEnrollmentStatus(fingerprint.fingerprint_id);
+                                        })
+                                        .catch(error => {
+                                            console.error('Registration error:', error);
+                                            alert('Error initiating fingerprint registration: ' + (error.response?.data?.message || 'Unknown error'));
+                                        });
+                                } else {
+                                    alert('No fingerprint found for this employee');
+                                }
+                            })
+                            .catch(error => {
+                                alert('Error fetching employee data: ' + (error.response?.data?.message || 'Unknown error'));
                             });
                     })
                     .catch(error => {
-                        alert('Error selecting fingerprint: ' + (error.response?.data?.message || 'Unknown error'));
+                        alert('Error selecting employee: ' + (error.response?.data?.message || 'Unknown error'));
                     });
             });
 

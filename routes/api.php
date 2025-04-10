@@ -15,7 +15,6 @@ Route::apiResource('schedules', ScheduleController::class);
 Route::apiResource('fingerprints', FingerprintController::class);
 Route::get('/employees', [EmployeeController::class, 'index']);
 Route::get('/fingerprints', [FingerprintController::class, 'index']);
-Route::post('/employees', [EmployeeController::class, 'store']);
 Route::post('/fingerprint', [FingerprintController::class, 'handleFingerprint']);
 Route::post('/leaves/{leave}/accept', [LeaveController::class, 'accept']);
 Route::post('/leaves/{leave}/reject', [LeaveController::class, 'reject']);

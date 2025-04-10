@@ -98,7 +98,6 @@
                     <select name="role" id="role" class="form-control" required>
                         <option value="" selected disabled>Select</option>
                         <option value="admin">Admin</option>
-                        <option value="manager">Manager</option>
                         <option value="employee">Employee</option>
                         <option value="hr">HR</option>
                     </select>
@@ -151,7 +150,7 @@
             $('#employee-form').on('submit', function (event) {
                 event.preventDefault();
                 $('.error').text('');
-
+                checkInput();
                 let formData = {
                     employee_id: $('#employee_id').val(),
                     first_name: $('#first_name').val(),
@@ -169,7 +168,7 @@
                     role: $('#role').val(),
                 };
 
-                axios.post('/api/employees', formData)
+                axios.post('/employees', formData)
                     .then(response => {
                         alert('Employee added successfully!');
                         $('#employee-form')[0].reset();

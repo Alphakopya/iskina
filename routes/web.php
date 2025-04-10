@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::view('/employee', 'employee-list')->name('employee.list');
+    Route::post('/employees', [EmployeeController::class, 'store']);
     Route::view('/employee/new', 'employee-new')->name('employee.new');
     Route::get('/get-branches', [BranchController::class, 'getBranches']);
     Route::get('/employee-update/{id}', function ($id) {
@@ -51,7 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/my-attendance/list', [AttendanceController::class, 'fetchMyAttendance'])->name('api.my.attendance');
     Route::post('/device/mode', [AttendanceController::class, 'updateDeviceMode']);
     Route::get('/device-mode', [AttendanceController::class, 'getDeviceMode']);
-
+    Route::get('/fingerprint/employees/{employeeId}', [FingerprintController::class, 'getEmployee']);
+    Route::get('/fingerprint', [FingerprintController::class, 'fingerprintIndex']);
     Route::view('/fingerprint/new', 'fingerprint-new')->name('fingerprint.new');
     Route::get('/employees/by-branch', [EmployeeController::class, 'byBranch']);
     Route::post('/fingerprint/select', [FingerprintController::class, 'select'])->name('fingerprint.select');

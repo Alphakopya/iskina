@@ -7,10 +7,13 @@ use App\Models\Device;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
 class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
+    
         $date = $request->query('date');
         $branch = $request->query('branch');
         $page = $request->query('page', 1);
@@ -18,7 +21,7 @@ class AttendanceController extends Controller
 
         $query = Attendance::select('attendances.*')
         ->when($date, function ($query, $date) {
-            return $query->whereDate('time_in', $date);
+            return $query->whereDate('date', $date);
         })
         ->when($branch, function ($query, $branch) {
             return $query->where('attendances.branch', $branch);
@@ -32,7 +35,11 @@ class AttendanceController extends Controller
         $records = $query->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
-
+        Log::info('Attendance records fetched', [
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
         // Add employee data to each record
         $records = $records->map(function ($record) {
             return [

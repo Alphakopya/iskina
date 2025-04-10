@@ -13,7 +13,7 @@
         <div class="filters">
             <div class="form-group">
                 <label for="date_filter">Date</label>
-                <input type="date" id="date_filter" class="form-control" value="{{ date('Y-m-d') }}">
+                <input type="date" id="date_filter" class="form-control" value="{{ now('Asia/Manila')->format('Y-m-d') }}">
             </div>
             <div class="form-group">
                 <label for="branch_filter">Branch</label>
@@ -87,8 +87,7 @@
                 fetchAttendance(1);
             });
 
-             // Change Device Mode
-             $('.mode-btn').click(function () {
+            $('.mode-btn').click(function () {
                 let mode = $(this).data('mode');
                 changeDeviceMode(mode);
             });
@@ -97,6 +96,29 @@
                 fetchAttendance();
             }, 3000);
         });
+
+        // Function to format time from HH:mm:ss.SSS to 12-hour AM/PM
+        function formatTime(timeStr) {
+            if (!timeStr || timeStr === 'N/A') return 'N/A';
+
+            // Split the time string into components
+            const [hoursStr, minutes, secondsFull] = timeStr.split(':');
+            const [seconds] = secondsFull.split('.'); // Ignore milliseconds
+            
+            let hours = parseInt(hoursStr);
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            
+            // Convert to 12-hour format
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
+            
+            // Pad minutes and seconds with leading zeros if needed
+            const paddedMinutes = minutes.padStart(2, '0');
+            const paddedSeconds = seconds.padStart(2, '0');
+            
+            return `${hours}:${paddedMinutes} ${ampm}`;
+        }
+
         function getDeviceMode() {
             axios.get('/device-mode')
                 .then(response => {
@@ -107,11 +129,12 @@
                     console.error("Error fetching device mode:", error);
                 });
         }
+
         function changeDeviceMode(mode) {
             axios.post('/device/mode', { mode: mode })
                 .then(response => {
                     alert('Device mode updated to ' + mode);
-                    getDeviceMode(); // Refresh the mode display
+                    getDeviceMode();
                 })
                 .catch(error => {
                     console.error("Error updating mode:", error);
@@ -150,10 +173,10 @@
                                     <td>${record.employee_id}</td>
                                     <td>${record.name ? record.name : 'N/A'}</td>
                                     <td>${record.branch ? record.branch : 'N/A'}</td>
-                                    <td>${record.time_in || 'N/A'}</td>
-                                    <td>${record.break_in ? record.break_in : 'N/A'}</td>
-                                    <td>${record.break_out ? record.break_out : 'N/A'}</td>
-                                    <td>${record.time_out || 'N/A'}</td>
+                                    <td>${formatTime(record.time_in)}</td>
+                                    <td>${formatTime(record.break_in)}</td>
+                                    <td>${formatTime(record.break_out)}</td>
+                                    <td>${formatTime(record.time_out)}</td>
                                 </tr>
                             `);
                         });

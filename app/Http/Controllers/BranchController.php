@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Log;
 class BranchController extends Controller
 {
     /**
@@ -33,7 +33,6 @@ class BranchController extends Controller
     public function store(Request $request)
     {
         $fields = $request->validate([
-            'branch_id' => 'required|unique:branches,branch_id',
             'branch_name' => 'required|unique:branches,branch_name',
             'location' => 'required',
             'contact_number' => 'required',
@@ -41,7 +40,7 @@ class BranchController extends Controller
         ]);
 
         $branch = Branch::create($fields);
-
+        Log::info('Branch created successfully', ['branch_id' => $branch->id]);
         return response()->json([
             'status' => 'success',
             'message' => 'Branch created successfully',
@@ -66,7 +65,6 @@ class BranchController extends Controller
     public function update(Request $request, Branch $branch)
     {
         $fields = $request->validate([
-            'branch_id' => 'sometimes|required|unique:branches,branch_id,' . $branch->branch_id,
             'branch_name' => 'sometimes|required|unique:branches,branch_name,' . $branch->branch_name,
             'location' => 'sometimes|required',
             'contact_number' => 'sometimes|required',

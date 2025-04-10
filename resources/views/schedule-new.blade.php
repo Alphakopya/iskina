@@ -28,6 +28,7 @@
                         <!-- Checkboxes populated dynamically -->
                     </div>
                     <small class="text-danger error" id="error-selected_employees"></small>
+                    <small class="text-danger error" id="error-schedule_days"></small>
                 </div>
                 <div id="pagination" class="pagination-wrapper" style="display: none;"></div>
                 <button type="button" id="next-to-step2" class="btn btn-primary">Next</button>
@@ -37,6 +38,7 @@
         <!-- Step 2: Schedule Days -->
         <div id="step2" class="step" style="display: none;">
             <h3>Step 2: Set Schedule Days</h3>
+            <div id="server-error" class="text-danger" style="margin-bottom: 15px; display: none;"></div> <!-- Added error container -->
             <form class="form-content" id="schedule-form">
                 <div class="grid-group">
                     <div class="form-group">
@@ -58,7 +60,6 @@
                     </div>
                     <div id="schedule-days-boxes" class="calendar-grid"></div>
                     <br>
-                    <small class="text-danger error" id="error-schedule_days"></small>
                 </div>
                 <div class="buttons">
                     <button type="button" id="back-to-step1" class="btn btn-secondary">Back</button>
@@ -68,6 +69,7 @@
         </div>
     </div>
 
+    <!-- Existing styles -->
     <style>
         .form { padding: 20px; }
         .btn-primary { display: inline-block; padding: 8px 16px; background-color: rgb(200, 0, 0); color: white; text-decoration: none; border-radius: 4px; margin: 5px; }
@@ -148,6 +150,16 @@
             .calendar-box .date { font-size: 12px; }
             .calendar-box .month { font-size: 9px; }
             .calendar-box .status { font-size: 8px; }
+        }
+        .text-danger { color: #dc3545; font-weight: bold; }
+        #server-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+            line-height: 1.5; /* Increase line spacing for better readability */
         }
     </style>
 
@@ -390,11 +402,13 @@
             $('#back-to-step1').click(function () {
                 $('#step2').hide();
                 $('#step1').show();
+                $('#server-error').hide().text(''); // Clear server error when going back
             });
 
             $('#schedule-form').on('submit', function (event) {
                 event.preventDefault();
                 $('.error').text('');
+                $('#server-error').hide().text(''); // Clear previous server error
 
                 const startDate = $('#start_date').val();
                 const endDate = $('#end_date').val();
@@ -432,16 +446,25 @@
                 axios.post('/api/schedules', formData)
                     .then(response => {
                         alert('Schedule created successfully!');
-                        window.location.href = '/schedules';
+                        window.location.href = '/schedules/list';
                     })
                     .catch(error => {
-                        if (error.response && error.response.data.errors) {
-                            let errors = error.response.data.errors;
-                            for (let field in errors) {
-                                $(`#error-${field}`).text(errors[field][0]);
+                        if (error.response && error.response.data) {
+                            // Handle validation errors (e.g., from Laravel's validator)
+                            if (error.response.data.errors) {
+                                let errors = error.response.data.errors;
+                                for (let field in errors) {
+                                    $(`#error-${field}`).text(errors[field][0]);
+                                }
+                            }
+                            // Handle custom errors (e.g., schedule conflicts)
+                            if (error.response.data.error) {
+                                // Replace \n with <br> for HTML rendering
+                                const errorMessage = error.response.data.error.replace(/\n/g, '<br>');
+                                $('#server-error').html(errorMessage).show();
                             }
                         } else {
-                            alert('An error occurred while creating the schedule.');
+                            $('#server-error').text('An error occurred while creating the schedule.').show();
                         }
                     });
             });
